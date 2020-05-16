@@ -1,10 +1,14 @@
 class Transaction:
+    id = None
     ip_counter = None
-    inputs = []  # List of Pairs
+    inputs = []  # list of tuples (node_id, value)
     op_counter = None
-    outputs = []  # List of Pairs
+    outputs = []  # list of tuples (node_id, value)
 
-    def __init__(self, ip_counter=0, inputs=[], op_counter=0, outputs=[]):
+    def __init__(self, id, ip_counter=0, inputs=[], op_counter=0, outputs=[]):
+        if not isinstance(id, int):
+            raise Exception("transaction id must be an int!")
+        self.id = id
         self.ip_counter = ip_counter
         self.inputs = inputs
         self.op_counter = op_counter
