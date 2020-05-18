@@ -2,6 +2,11 @@ from transaction import Transaction
 import cryptography
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.exceptions import InvalidSignature
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import padding
+
 
 
 class Client:
@@ -60,8 +65,17 @@ def produce_transactions(path):
                     prev_tans = int(field.split(':')[1])
             for op in outputs.values():
                 trans.add_output(op)
-            trans.add_input((input_ip, prev_tans))
+            trans.add_input((input_ip, prev_tans, clients[input_ip].public_key))
             transactions.append(trans)
+            signature = clients[input_ip].private_key.sign(
+                data=trans.__str__().encode('utf-8'),
+                padding=padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                algorithm=hashes.SHA256()
+            )
+            trans.add_signature(signature)
             print(trans)
 
 
