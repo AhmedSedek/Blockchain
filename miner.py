@@ -3,6 +3,7 @@ from utils import pow
 from Connect import Connect
 from ConnectData import ConnectData
 from MerkleTree import MerkleTree
+import argparse
 
 
 import sys
@@ -15,7 +16,6 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from block import HASH_PREV_BLOCK_KEY, HASH_MERKLE_ROOT_KEY, TIME_KEY
 
-
 class Miner:
     mode = None  # PoW or BFT
     block_size = None
@@ -25,7 +25,6 @@ class Miner:
     credits = None
     mining_thread = None
     transactions_queue = None
-
 
     def __init__(self, mode='PoW', block_size=200, difficulty=3, port=0000):
         self.mode = mode
@@ -175,3 +174,11 @@ def verify_signature(transaction):
         return True
     except InvalidSignature:
         return False
+
+
+def main(argv):
+    Miner(block_size=int(argv[0]), difficulty=int(argv[1]), port=int(argv[2]))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
