@@ -37,9 +37,9 @@ class Miner:
         self.curr_block = Block(block_size=block_size)
         self.credits = {0: sys.float_info.max}
         if port != 0000:
-            self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
+            self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block, ConnectData.TYPE_MESSAGE: self.print_msg})
         if ip != "000":
-            self.connect = ConnectRemote(ip, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
+            self.connect = ConnectRemote(ip, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block, ConnectData.TYPE_MESSAGE: self.print_msg})
         self.transactions_queue = []
         self.blocks_queue = []
         self.lock = threading.Lock()
@@ -186,6 +186,9 @@ class Miner:
             ))
             # print(transaction)
         return total_owned >= total_spent
+
+    def print_msg(self, msg):
+        print(msg)
 
 
 def verify_signature(transaction):
