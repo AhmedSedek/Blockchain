@@ -15,6 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 from block import HASH_PREV_BLOCK_KEY, HASH_MERKLE_ROOT_KEY, TIME_KEY
 
+
 class Miner:
     mode = None  # PoW or BFT
     block_size = None
@@ -24,10 +25,9 @@ class Miner:
     credits = None
     mining_thread = None
     transactions_queue = None
-    main_connect = None
     logger = None
 
-    def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000, main_connect=None):
+    def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000):
         self.id = id
         self.mode = mode
         self.block_size = block_size
@@ -39,7 +39,6 @@ class Miner:
         self.transactions_queue = []
         self.blocks_queue = []
         self.lock = threading.Lock()
-        self.main_connect = main_connect
         self.__setup_logger()
         self.main_thread = threading.Thread(target=self.__run).start()
 
@@ -152,7 +151,7 @@ class Miner:
         self.logger.info(
             "Mined block added as {}: {}".format(len(self.blocks), self.curr_block)
         )
-        self.main_connect.send_to_all_miners(ConnectData.TYPE_BLOCK, self.curr_block)
+        self.connect.send_to_all_miners(ConnectData.TYPE_BLOCK, self.curr_block)
         self.curr_block = Block(block_size=self.block_size)
 
     def __get_credit(self, node):
