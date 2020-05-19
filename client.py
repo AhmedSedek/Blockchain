@@ -62,6 +62,7 @@ def produce_transactions(path, cnt=None):
                         outputs[output_num] = (None, value)
             for op in outputs.values():
                 trans.add_output(op)
+            # trans.add_input((input_ip, clients[input_ip].public_key))
             trans.add_input((input_ip, None))
             transactions.append(trans)
             signature = clients[input_ip].private_key.sign(

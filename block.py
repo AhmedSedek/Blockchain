@@ -41,4 +41,4 @@ class Block:
         self.mining_time = time
 
     def __str__(self):
-        return "Hash value = {}, mining_time = {}, header = {}".format(self.hash_value, self.mining_time, self.header)
+        return "Hash value = {}, mining_time = {} ms, header = {}".format(self.hash_value, self.mining_time/1000000.0, self.header)

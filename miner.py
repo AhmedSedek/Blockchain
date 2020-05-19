@@ -26,6 +26,7 @@ class Miner:
     mining_thread = None
     transactions_queue = None
     logger = None
+    done = None
 
     def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000):
         self.id = id
@@ -41,11 +42,15 @@ class Miner:
         self.lock = threading.Lock()
         self.__setup_logger()
         self.main_thread = threading.Thread(target=self.__run).start()
+        self.received_messages = 0
+        self.total_mining_time = 0
+        self.self_mined = 0
+        self.done = set()
 
     def __setup_logger(self):
         self.logger = logging.getLogger("miner-{}-logger".format(self.id))
-        handler = logging.FileHandler("miner-{}-logs.txt".format(self.id))
-        handler.setFormatter(logging.Formatter(' %(name)s :: %(levelname)-8s :: %(message)s'))
+        handler = logging.FileHandler("miner-{}-{}-{}-logs.txt".format(self.id, self.block_size, self.difficulty))
+        handler.setFormatter(logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s", "%Y-%m-%d %H:%M:%S"))
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
 
@@ -75,11 +80,13 @@ class Miner:
     def add_block(self, block):  # This is going to be used with PoW and will assume a block is trusted
         self.logger.info("Received a block! with header: {} and hash: {}".format(block.header, block.hash_value))
         self.lock.acquire()
+        self.received_messages += 1
         self.blocks_queue.append(block)
         self.lock.release()
      
     def add_transaction(self, transaction):
         self.lock.acquire()
+        self.received_messages += 1
         self.transactions_queue.append(transaction)
         self.lock.release()
 
@@ -107,7 +114,11 @@ class Miner:
             self.curr_block.set_header(header)
             self.curr_block.set_hash(hashed_header)
             self.curr_block.set_mining_time(time.time_ns() - curr_time)
+            self.total_mining_time += time.time_ns() - curr_time
+            self.self_mined += 1
             self.__add_block_to_chain()
+            self.logger.info("Total mining time = {}, total mining = {}, total messages Received = {}".
+                             format(self.total_mining_time/1000000.0, self.self_mined, self.received_messages))
         else:
             raise Exception("Not implemented Yet!")
 
@@ -131,6 +142,9 @@ class Miner:
             if self.__can_add_external_block(self.blocks_queue[0]):
                 self.__reverse_curr_block()
                 new_blocks = True
+                for trans in self.blocks_queue[0].data:
+                    self.done.add(trans.id)
+                    self.__update_credits(trans)
                 self.blocks.append(self.blocks_queue[0])
                 self.logger.info(
                     "Received block added as {}: {}".format(len(self.blocks), self.blocks_queue[0])
@@ -151,6 +165,8 @@ class Miner:
         self.logger.info(
             "Mined block added as {}: {}".format(len(self.blocks), self.curr_block)
         )
+        for trans in self.curr_block.data:
+            self.done.add(trans.id)
         self.connect.send_to_all_miners(ConnectData.TYPE_BLOCK, self.curr_block)
         self.curr_block = Block(block_size=self.block_size)
 
@@ -163,12 +179,18 @@ class Miner:
             target, value = output[0], output[1]
             if target not in self.credits:
                 self.credits[target] = 0
-            self.credits[target] += value if not reverse else -value
-            self.credits[source] -= value if not reverse else -value
+            if not reverse:
+                self.credits[target] += value
+                self.credits[source] -= value
+            else:
+                self.credits[target] -= value
+                self.credits[source] += value
 
     def __verify_transaction(self, transaction):
         if not verify_signature(transaction):
             print("INVALID SIGNATURE {}".format(transaction.id))
+            return False
+        if transaction.id in self.done:
             return False
         source = transaction.inputs[0][0]
         total_owned = self.__get_credit(source)
