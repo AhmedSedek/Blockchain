@@ -16,12 +16,16 @@ class Client:
         self.public_key = self.private_key.public_key()
 
 
-def produce_transactions(path):
+def produce_transactions(path, cnt=None):
     clients = {}
     transactions = []
     with open(path) as fp:
         lines = fp.read().split("\n")[:-1]
+        id = 0
         for line in lines[1:]:
+            id += 1
+            if cnt is not None and id > cnt:
+                break
             fields = line.split('\t')
             trans_id = int(fields[0])
             trans = Transaction(trans_id)

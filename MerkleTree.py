@@ -2,16 +2,16 @@ import hashlib
 from collections import OrderedDict
 
 
-
 class MerkleTree:
     Tree = []
     Root = None
+
     def __init__(self, Transactions=None):
         self.Transactions = Transactions
         self.transactionDictionary = OrderedDict()
+        self.create_tree()
 
     def GetRoot(self):
-
         return self.Root
 
     def create_tree(self):
@@ -20,7 +20,7 @@ class MerkleTree:
         temp_list = []
         size = len(Transactions)
 
-        if size != 1 :
+        if size != 1:
             for i in range(0, size, 2):
                 first_transaction = Transactions[i]
 
