@@ -202,7 +202,7 @@ def verify_signature(transaction):
 
 
 def main(argv):
-    Miner(block_size=int(argv[0]), difficulty=int(argv[1]), port=int(argv[2]))
+    Miner(id=int(argv[0]), block_size=int(argv[1]), difficulty=int(argv[2]), port=int(argv[3]))
 
 
 if __name__ == "__main__":

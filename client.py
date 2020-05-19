@@ -23,7 +23,7 @@ def produce_transactions(path, cnt=None):
         lines = fp.read().split("\n")[:-1]
         id = 0
         for line in lines[1:]:
-            # print("Reading line:", line)
+            print("Reading line:", line)
             id += 1
             if cnt is not None and id > cnt:
                 break

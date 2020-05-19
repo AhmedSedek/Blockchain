@@ -10,7 +10,6 @@ CLIENTS_PORT_LIST = [65430, 65431, 65432, 65433]
 MINERS_PORT_LIST = [65434, 65435, 65436]
 
 def t_print(*a, **b):
-    return
     with s_print_lock:
         print(*a, **b)
 
@@ -60,7 +59,7 @@ class Connect:
             s.sendall(data)
 
     def _receiver(self):
-        t_print("Connect ", self.PORT, " Received data")
+        t_print("Connection", self.PORT, "Ready to Receive Data")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, self.PORT))
             s.listen()
@@ -78,6 +77,7 @@ class Connect:
                     connect_data = pickle.loads(bytes(data))
                     data_type = connect_data.TYPE
                     data = connect_data.get_data()
+                    t_print("Received new", data_type)
                     try:
                         self.callbacks[data_type](data)
                     except (ValueError, Exception):
