@@ -7,7 +7,6 @@ def main():
     print("Welcome to the simple Blockchain project!")
     transactions, clients = produce_transactions("txdataset_v2.txt", 1000)
     miner = Miner(block_size=100, difficulty=20, port=65434)
-    transactions, clients = produce_transactions("txdataset_v2.txt")
 
     main_connect = Connect(65430)
 
