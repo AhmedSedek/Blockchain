@@ -1,5 +1,7 @@
 from block import Block
 from utils import pow
+from Connect import Connect
+from ConnectData import ConnectData
 
 
 import copy
@@ -23,19 +25,22 @@ class Miner:
     credits = None
     mining_process = None
 
-    def __init__(self, mode='PoW', block_size=200, difficulty=3):
+
+    def __init__(self, mode='PoW', block_size=200, difficulty=3, port=0000):
         self.mode = mode
         self.block_size = block_size
         self.blocks = []
         self.difficulty = difficulty
         self.curr_block = Block(block_size=block_size)
         self.credits = {0: sys.float_info.max}
+        self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction})
 
     def add_block(self, block):  # This is going to be used with PoW and will assume a block is trusted
         self.blocks.append(block)  # Add to the chain
         self.__update_curr_block(block)  # Update current block to remove already added transactions
      
     def add_transaction(self, transaction):
+        print("Adding Transaction")
         if self.__verify_transaction(transaction):
             self.__update_credits(transaction)
             self.curr_block.add_transaction(transaction)

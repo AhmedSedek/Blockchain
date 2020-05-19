@@ -22,6 +22,7 @@ def produce_transactions(path):
     with open(path) as fp:
         lines = fp.read().split("\n")[:-1]
         for line in lines[1:]:
+            print("Reading line:", line)
             fields = line.split('\t')
             trans_id = int(fields[0])
             trans = Transaction(trans_id)
