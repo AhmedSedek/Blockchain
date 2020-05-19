@@ -4,17 +4,16 @@ from Connect import Connect
 from ConnectData import ConnectData
 from MerkleTree import MerkleTree
 
-
+import logging
 import sys
 import threading
-from datetime import datetime
+import time
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from block import HASH_PREV_BLOCK_KEY, HASH_MERKLE_ROOT_KEY, TIME_KEY
-
 
 class Miner:
     mode = None  # PoW or BFT
@@ -25,25 +24,37 @@ class Miner:
     credits = None
     mining_thread = None
     transactions_queue = None
+    main_connect = None
+    logger = None
 
-
-    def __init__(self, mode='PoW', block_size=200, difficulty=3, port=0000):
+    def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000, main_connect=None):
+        self.id = id
         self.mode = mode
         self.block_size = block_size
         self.blocks = []
         self.difficulty = difficulty
         self.curr_block = Block(block_size=block_size)
         self.credits = {0: sys.float_info.max}
-        self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction})
+        self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
         self.transactions_queue = []
         self.blocks_queue = []
         self.lock = threading.Lock()
+        self.main_connect = main_connect
+        self.__setup_logger()
         self.main_thread = threading.Thread(target=self.__run).start()
-        self.ready_block = None
+
+    def __setup_logger(self):
+        self.logger = logging.getLogger("miner-{}-logger".format(self.id))
+        handler = logging.FileHandler("miner-{}-logs.txt".format(self.id))
+        handler.setFormatter(logging.Formatter(' %(name)s :: %(levelname)-8s :: %(message)s'))
+        self.logger.addHandler(handler)
+        self.logger.setLevel(logging.INFO)
 
     def __run(self):
         while True:
-            if len(self.curr_block.data) == self.block_size:
+            if len(self.blocks_queue) != 0:
+                self.__validate_received_blocks()
+            elif len(self.curr_block.data) == self.block_size:
                 self.__mine_block()
             else:
                 self.__move_transaction_to_block()
@@ -63,6 +74,7 @@ class Miner:
             self.lock.release()
 
     def add_block(self, block):  # This is going to be used with PoW and will assume a block is trusted
+        self.logger.info("Received a block! with header: {} and hash: {}".format(block.header, block.hash_value))
         self.lock.acquire()
         self.blocks_queue.append(block)
         self.lock.release()
@@ -85,17 +97,17 @@ class Miner:
         self.curr_block.set_data(refined_data)
 
     def __mine_block(self):
-        curr_time = datetime.now()
+        curr_time = time.time_ns()
         if self.mode == 'PoW':
             self.curr_block.set_header({
                 HASH_PREV_BLOCK_KEY: self.blocks[-1].hash_value if len(self.blocks) > 0 else "",
                 HASH_MERKLE_ROOT_KEY: MerkleTree(Transactions=self.curr_block.data).GetRoot(),
-                TIME_KEY: str(datetime.now())
+                TIME_KEY: str(curr_time)
             })
             header, hashed_header = pow(self.curr_block.header, self.difficulty)
             self.curr_block.set_header(header)
             self.curr_block.set_hash(hashed_header)
-            self.curr_block.set_mining_time(datetime.now() - curr_time)
+            self.curr_block.set_mining_time(time.time_ns() - curr_time)
             self.__add_block_to_chain()
         else:
             raise Exception("Not implemented Yet!")
@@ -109,29 +121,39 @@ class Miner:
     def __can_add_external_block(self, external_block):
         if len(self.blocks) == 0:
             return True
-        if self.blocks[-1].hash_value == external_block.headers[HASH_PREV_BLOCK_KEY]:
+        if self.blocks[-1].hash_value == external_block.header[HASH_PREV_BLOCK_KEY]:
             return True
         return False
 
-    def __add_block_to_chain(self):
+    def __validate_received_blocks(self):
         new_blocks = False
         self.lock.acquire()
         while len(self.blocks_queue) != 0:
             if self.__can_add_external_block(self.blocks_queue[0]):
                 self.__reverse_curr_block()
-                self.blocks_queue = self.blocks_queue[1:]
                 new_blocks = True
+                self.blocks.append(self.blocks_queue[0])
+                self.logger.info(
+                    "Received block added as {}: {}".format(len(self.blocks), self.blocks_queue[0])
+                )
+            else:
+                self.logger.info(
+                    "Received block rejected: {}".format(self.blocks_queue[0])
+                )
+            self.blocks_queue = self.blocks_queue[1:]
         self.lock.release()
+        return new_blocks
+
+    def __add_block_to_chain(self):
+        new_blocks = self.__validate_received_blocks()
         if new_blocks:
             return
         self.blocks.append(self.curr_block)
-        print(
-            "Block {} has a has a hash value {} with mining time (h:mm:ss) = {} and headers {}".format(
-                len(self.blocks), self.curr_block.hash_value, self.curr_block.mining_time, self.curr_block.header
-            )
+        self.logger.info(
+            "Mined block added as {}: {}".format(len(self.blocks), self.curr_block)
         )
+        self.main_connect.send_to_all_miners(ConnectData.TYPE_BLOCK, self.curr_block)
         self.curr_block = Block(block_size=self.block_size)
-        # TODO: let the network know!
 
     def __get_credit(self, node):
         return self.credits[node] if node in self.credits else 0
@@ -156,12 +178,15 @@ class Miner:
             total_spent += output[1]
         total_owned += 1e-5
         if total_owned < total_spent:
-            print("verifying transaction {} failed, total_owned = {}, total_spent = {}".format(transaction.id, total_owned, total_spent))
+            self.logger.info("Verifying transaction {} failed, total_owned = {}, total_spent = {}".format(
+                transaction.id, total_owned, total_spent
+            ))
             # print(transaction)
         return total_owned >= total_spent
 
 
 def verify_signature(transaction):
+    return True
     try:
         transaction.inputs[0][1].verify(
             signature=transaction.signature,

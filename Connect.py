@@ -6,9 +6,11 @@ from threading import Lock
 s_print_lock = Lock()
 HOST = "127.0.0.1"
 CLIENTS_PORT_LIST = [65430, 65431, 65432, 65433]
-MINERS_PORT_LIST = [65434, 65435, 65436, 65437]
+# MINERS_PORT_LIST = [65434, 65435, 65436, 65437]
+MINERS_PORT_LIST = [65434, 65435, 65436]
 
 def t_print(*a, **b):
+    return
     with s_print_lock:
         print(*a, **b)
 
@@ -66,7 +68,7 @@ class Connect:
                 conn, addr = s.accept()
                 data = []
                 with conn:
-                    print('Im ', HOST, ' Connected by', addr)
+                    # print('Im ', HOST, ' Connected by', addr)
                     while True:
                         chunk = conn.recv(4096)
                         if not chunk:
