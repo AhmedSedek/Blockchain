@@ -4,6 +4,7 @@ class ConnectData:
     TYPE_TRANSACTION = "TRANSACTION"
     TYPE_PUBLIC_KEY = "PUBLIC_KEY"
     TYPE_BLOCK = "BLOCK"
+    TYPE_MESSAGE = "MESSAGE"
 
     def __init__(self, data_type, data):
         self.TYPE = data_type

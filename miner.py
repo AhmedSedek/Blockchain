@@ -1,6 +1,7 @@
 from block import Block
 from utils import pow
 from Connect import Connect
+from ConnectRemote import ConnectRemote
 from ConnectData import ConnectData
 from MerkleTree import MerkleTree
 
@@ -27,7 +28,7 @@ class Miner:
     transactions_queue = None
     logger = None
 
-    def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000):
+    def __init__(self, id=None, mode='PoW', block_size=200, difficulty=3, port=0000, ip="000"):
         self.id = id
         self.mode = mode
         self.block_size = block_size
@@ -35,7 +36,10 @@ class Miner:
         self.difficulty = difficulty
         self.curr_block = Block(block_size=block_size)
         self.credits = {0: sys.float_info.max}
-        self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
+        if port != 0000:
+            self.connect = Connect(port, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
+        if ip != "000":
+            self.connect = ConnectRemote(ip, {ConnectData.TYPE_TRANSACTION: self.add_transaction, ConnectData.TYPE_BLOCK: self.add_block})
         self.transactions_queue = []
         self.blocks_queue = []
         self.lock = threading.Lock()
