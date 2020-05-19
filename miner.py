@@ -2,9 +2,9 @@ from block import Block
 from utils import pow
 from Connect import Connect
 from ConnectData import ConnectData
+from MerkleTree import MerkleTree
 
 
-import copy
 import sys
 import multiprocessing
 from datetime import datetime
@@ -67,7 +67,7 @@ class Miner:
         if self.mode == 'PoW':
             self.curr_block.set_header({
                 HASH_PREV_BLOCK_KEY: self.blocks[-1].hash_value if len(self.blocks) > 0 else "",
-                HASH_MERKLE_ROOT_KEY: "",
+                HASH_MERKLE_ROOT_KEY: MerkleTree(Transactions=self.curr_block.data).GetRoot(),
                 TIME_KEY: str(datetime.now())
             })
             header, hashed_header = pow(self.curr_block.header, self.difficulty)
