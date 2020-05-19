@@ -23,7 +23,7 @@ def produce_transactions(path, cnt=None):
         lines = fp.read().split("\n")[:-1]
         id = 0
         for line in lines[1:]:
-            print("Reading line:", line)
+            # print("Reading line:", line)
             id += 1
             if cnt is not None and id > cnt:
                 break
@@ -62,7 +62,7 @@ def produce_transactions(path, cnt=None):
                         outputs[output_num] = (None, value)
             for op in outputs.values():
                 trans.add_output(op)
-            trans.add_input((input_ip, clients[input_ip].public_key))
+            trans.add_input((input_ip, None))
             transactions.append(trans)
             signature = clients[input_ip].private_key.sign(
                 data=trans.__str__().encode('utf-8'),
@@ -72,7 +72,7 @@ def produce_transactions(path, cnt=None):
                 ),
                 algorithm=hashes.SHA256()
             )
-            trans.add_signature(signature)
+            # trans.add_signature(signature)
     return transactions, clients
 
 
