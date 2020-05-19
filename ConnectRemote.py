@@ -7,7 +7,7 @@ s_print_lock = Lock()
 HOST = "127.0.0.1"
 CLIENTS_PORT_LIST = [65430, 65431, 65432, 65433]
 # Sami / Mazen / Sharaf
-MINERS_IP_LIST = ["41.35.231.121","197.55.197.67", "197.35.101.30"]
+MINERS_IP_LIST = ["197.55.197.67", "197.35.101.30", "41.35.231.121"]
 
 def t_print(*a, **b):
     with s_print_lock:
@@ -15,12 +15,13 @@ def t_print(*a, **b):
 
 class ConnectRemote:
 
-    def __init__(self, ip, callbacks = {}):
+    def __init__(self, ip, local_ip, callbacks = {}, can_receive=True):
         print("Initialize Remote Connection")
         self.IP = ip
+        self.LOCAL_IP = local_ip
         self.callbacks = callbacks
 
-        _thread.start_new_thread(self._receiver, ())
+        if can_receive: _thread.start_new_thread(self._receiver, ())
 
     def send_to_all_miners(self, data_type, data):
         self._send_to_all_ports(MINERS_IP_LIST, "Miner", data_type, data)
@@ -62,7 +63,7 @@ class ConnectRemote:
     def _receiver(self):
         t_print("Connection", self.IP, "Ready to Receive Data")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("127.0.0.1", 65432))
+            s.bind((self.LOCAL_IP, 65432))
             s.listen(4)
             while True:
                 conn, addr = s.accept()
