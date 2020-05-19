@@ -11,12 +11,15 @@ class Block:
     data = None  # List of transactions
     block_size = None
 
-    __hash_value = None  # 256-bit (64 Hex Ascii chars)
+    hash_value = None  # 256-bit (64 Hex Ascii chars)
 
-    def __init__(self, header={}, data=[], block_size=200):
-        self.header = header
-        self.data = data
+    mining_time = None
+
+    def __init__(self, block_size=200):
+        self.header = {}
+        self.data = []
         self.block_size = block_size
+        self.mining_time = 0
 
     def add_transaction(self, transaction):
         if len(self.data) == self.block_size:
@@ -31,15 +34,8 @@ class Block:
             raise Exception("Number of transactions must be <= block_size")
         self.data = data
 
-    def get_hash(self):
-        if self.__hash_value is None:
-            self.__hash_value = self.__calculate_hash()
-        return self.__hash_value
+    def set_hash(self, hash_value):
+        self.hash_value = hash_value
 
-    def __calculate_hash(self):
-        header_hex = (self.header[HASH_PREV_BLOCK_KEY] + self.header[HASH_MERKLE_ROOT_KEY]
-                      + '{0:08X}'.format(self.header[TIME_KEY]) + '{0:08X}'.format(self.header[NONCE_KEY]))
-        header_bin = header_hex.decode('hex')
-        hash = sha256(sha256(header_bin).digest()).digest()
-        hash[::-1].encode('hex_codec')
-        return hash
+    def set_mining_time(self, time):
+        self.mining_time = time

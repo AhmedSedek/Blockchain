@@ -8,7 +8,7 @@ class Transaction:
         self.op_counter = 0
         self.ip_counter = 0
         self.signature = None
-        self.inputs = []  # list of tuples (node_id, prev_trans, public_key)
+        self.inputs = []  # list of tuples (node_id, public_key)
 
     def add_input(self, ip):
         self.ip_counter = self.ip_counter + 1
@@ -24,7 +24,7 @@ class Transaction:
     def __str__(self):
         res = str(self.id) + ':' + str(self.ip_counter) + ':'
         for ip in self.inputs:
-            res += str(ip) + ':'
+            res += "({})".format(str(ip[0])) + ':'
         res += str(self.op_counter) + ':'
         for output in self.outputs:
             res += str(output) + ':'

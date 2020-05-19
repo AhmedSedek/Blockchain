@@ -1,16 +1,11 @@
 from transaction import Transaction
-import cryptography
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.exceptions import InvalidSignature
-from cryptography.exceptions import UnsupportedAlgorithm
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 
 
-
 class Client:
-
     def __init__(self, id):
         self.id = id
         self.private_key = rsa.generate_private_key(
@@ -30,11 +25,10 @@ def produce_transactions(path):
             fields = line.split('\t')
             trans_id = int(fields[0])
             trans = Transaction(trans_id)
-            prev_tans = None
             outputs = {}
             for field in fields[1:]:
                 if field.startswith("intput"):
-                    input_ip = field.split(':')[1]
+                    input_ip = int(field.split(':')[1])
                     add_client(clients, input_ip)
                 elif field.startswith("outputindex"):
                     output_index = int(field.split(':')[1])
@@ -61,11 +55,9 @@ def produce_transactions(path):
                         outputs[output_num] = (outputs[output_num][0], value)
                     else:
                         outputs[output_num] = (None, value)
-                elif field.startswith("previoustx"):
-                    prev_tans = int(field.split(':')[1])
             for op in outputs.values():
                 trans.add_output(op)
-            trans.add_input((input_ip, prev_tans, clients[input_ip].public_key))
+            trans.add_input((input_ip, clients[input_ip].public_key))
             transactions.append(trans)
             signature = clients[input_ip].private_key.sign(
                 data=trans.__str__().encode('utf-8'),
@@ -76,8 +68,7 @@ def produce_transactions(path):
                 algorithm=hashes.SHA256()
             )
             trans.add_signature(signature)
-            print(trans)
-
+    return transactions, clients
 
 
 def add_client(clients, input_ip):
